@@ -5,10 +5,6 @@ from colorama import Fore, Style, init
 # Inicializar colorama para entornos de Windows
 init()
 
-# Representación inicial del estanque con n ranas de cada lado
-n = 3  # Cambia el valor de n para aumentar el número de ranas
-estanque_inicial = ['L'] * n + ['_'] + ['R'] * n
-
 # Lock para sincronizar movimientos
 lock = threading.Lock()
 
@@ -62,19 +58,60 @@ def movimiento_grupo(estanque, grupo, saltos):
                 mover_rana(estanque, origen, destino)
                 mostrar_estanque(estanque)
                 time.sleep(0.5)
-            else:
-                break  # Si no hay movimientos posibles, detener
 
-# Función para ejecutar el juego con hilos
+
+# # Genera la secuencia de saltos según la lógica descrita
+# def generar_secuencia_saltos(n):
+#     secuencia = []
+#     # Secuencia de incremento
+#     for i in range(1, n + 1):
+#         secuencia.append((i, 'L' if i % 2 != 0 else 'R'))
+    
+#     # Secuencia de repetición con n saltos
+#     secuencia.extend([(n, 'L'), (n, 'R'), (n, 'L')])
+    
+#     # Secuencia de decremento
+#     for i in range(n - 1, 0, -1):
+#         secuencia.append((i, 'R' if i % 2 != 0 else 'L'))
+    
+#     return secuencia
+
+
+def generar_secuencia_saltos(n):
+    secuencia = []
+    # Secuencia de incremento
+    for i in range(1, n + 1):
+        secuencia.append((i, 'L' if i % 2 != 0 else 'R'))
+    
+    # Si n es impar, hacer un ajuste
+    if n % 2 != 0:
+        secuencia.append((n, 'L'))
+        secuencia.append((n, 'R'))
+    
+    # Secuencia de repetición con n saltos
+    secuencia.extend([(n, 'L'), (n, 'R'), (n, 'L')])
+    
+    # Secuencia de decremento
+    for i in range(n - 1, 0, -1):
+        secuencia.append((i, 'R' if i % 2 != 0 else 'L'))
+    
+    return secuencia
+
+
+
+    # Función para ejecutar el juego con hilos
 def ejecutar_juego_con_hilos():
-    estanque = estanque_inicial[:]
+    # Pedir al usuario la cantidad de ranas por lado
+    n = int(input("Ingrese la cantidad de ranas por lado: "))
+    estanque = ['L'] * n + ['_'] + ['R'] * n
     mostrar_estanque(estanque)
     
-    # Definir secuencia de movimientos y turnos
-    secuencia_saltos = [(1, 'L'), (2, 'R'), (3, 'L'), (3, 'R'), (3, 'L'), (2, 'R'), (1, 'L')]
+    # Generar la secuencia de saltos según el valor de n
+    secuencia_saltos = generar_secuencia_saltos(n)
 
     # Crear hilos para cada secuencia de movimiento
     for saltos, grupo in secuencia_saltos:
+        # Comprobar si se ha completado el juego
         if estanque == ['R'] * n + ['_'] + ['L'] * n:
             print(Fore.MAGENTA + "¡Felicidades! Has completado el juego." + Style.RESET_ALL)
             return
@@ -83,10 +120,6 @@ def ejecutar_juego_con_hilos():
         hilo = threading.Thread(target=movimiento_grupo, args=(estanque, grupo, saltos))
         hilo.start()
         hilo.join()  # Esperar a que el hilo termine antes de continuar con el siguiente
-
-    # Mensaje final si se completa el ciclo de movimientos sin resolver el juego
-    if estanque != ['R'] * n + ['_'] + ['L'] * n:
-        print(Fore.RED + "El juego no se completó en 15 movimientos." + Style.RESET_ALL)
 
 # Inicia el juego
 if __name__ == "__main__":
