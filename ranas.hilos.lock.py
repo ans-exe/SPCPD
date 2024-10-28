@@ -5,122 +5,103 @@ from colorama import Fore, Style, init
 # Inicializar colorama para entornos de Windows
 init()
 
-# Lock para sincronizar movimientos
-lock = threading.Lock()
+class Estanque:
+    def __init__(self, n):
+        """Inicializa el estanque con n ranas en cada lado y un espacio vacío en el centro."""
+        self.estanque = ['L'] * n + ['_'] + ['R'] * n
+        self.lock = threading.Lock()
 
-# Función para mostrar el estanque
-def mostrar_estanque(estanque):
-    print(Style.RESET_ALL + "Ranas ->     ", end="  ")
+    def mostrar(self):
+        """Muestra el estado actual del estanque."""
+        print(Style.RESET_ALL + "Ranas ->     ", end="  ")
+        for posicion in self.estanque:
+            color = Fore.RED if posicion == 'L' else Fore.GREEN if posicion == 'R' else Fore.WHITE
+            print(color + posicion, end=" ")
+        print(Style.RESET_ALL)
+        print(Style.RESET_ALL + "Posiciones -> " + " ".join(map(str, range(len(self.estanque)))))
+
+    def mover_rana(self, origen, destino):
+        """Intercambia la posición de una rana con el espacio vacío."""
+        self.estanque[origen], self.estanque[destino] = self.estanque[destino], self.estanque[origen]
+
+    def encontrar_movimientos(self, grupo):
+        """Encuentra los movimientos válidos para el grupo 'L' o 'R'."""
+        movimientos = []
+        posicion_vacia = self.estanque.index('_')
+
+        for i in range(len(self.estanque)):
+            if grupo == 'L' and self.estanque[i] == 'L':
+                if i + 1 < len(self.estanque) and self.estanque[i + 1] == '_':
+                    movimientos.append((i, i + 1))
+                elif i + 2 < len(self.estanque) and self.estanque[i + 2] == '_':
+                    movimientos.append((i, i + 2))
+            elif grupo == 'R' and self.estanque[i] == 'R':
+                if i - 1 >= 0 and self.estanque[i - 1] == '_':
+                    movimientos.append((i, i - 1))
+                elif i - 2 >= 0 and self.estanque[i - 2] == '_':
+                    movimientos.append((i, i - 2))
+
+        movimientos.sort(key=lambda mov: abs(mov[0] - posicion_vacia))
+        return movimientos
+
+    def es_completado(self, n):
+        """Verifica si el juego ha sido completado."""
+        return self.estanque == ['R'] * n + ['_'] + ['L'] * n
+
+
+class RanaGrupo(threading.Thread):
+    def __init__(self, estanque, grupo, saltos):
+        """Inicializa un hilo para mover un grupo de ranas."""
+        super().__init__()
+        self.estanque = estanque
+        self.grupo = grupo
+        self.saltos = saltos
+
+    def run(self):
+        """Ejecuta los movimientos para el grupo de ranas."""
+        for _ in range(self.saltos):
+            with self.estanque.lock:
+                movimientos = self.estanque.encontrar_movimientos(self.grupo)
+                if movimientos:
+                    origen, destino = movimientos.pop(0)
+                    self.estanque.mover_rana(origen, destino)
+                    self.estanque.mostrar()
+                    time.sleep(0.5)
+
+
+class JuegoRanas:
+    def __init__(self):
+        """Inicializa el juego pidiendo la cantidad de ranas por lado."""
+        self.n = int(input("Ingrese la cantidad de ranas por lado: "))
+        self.estanque = Estanque(self.n)
+
+    def generar_secuencia_saltos(self):
+       
+        secuencia = [(i, 'L' if i % 2 != 0 else 'R') for i in range(1, self.n + 1)]
+
+        if self.n % 2 != 0:
+            secuencia += [(self.n, 'L'), (self.n, 'R')]
+
+        secuencia += [(self.n, 'L'), (self.n, 'R'), (self.n, 'L')]
+        secuencia += [(i, 'R' if i % 2 != 0 else 'L') for i in range(self.n - 1, 0, -1)]
+
+        return secuencia
+
+    def ejecutar(self):
     
-    for posicion in estanque:
-        if posicion == 'L':
-            print(Fore.RED + posicion, end=" ")  # Ranas de la izquierda en rojo
-        elif posicion == 'R':
-            print(Fore.GREEN + posicion, end=" ")  # Ranas de la derecha en verde
-        else:
-            print(Fore.WHITE + posicion, end=" ")  # Espacio vacío en blanco
-    
-    print(Style.RESET_ALL)  # Restablecemos el color a la configuración predeterminada
-    print(Style.RESET_ALL + "Posiciones -> " + " ".join(map(str, range(len(estanque)))))
+        self.estanque.mostrar()
+        secuencia_saltos = self.generar_secuencia_saltos()
 
-# Encuentra todos los movimientos válidos posibles para un grupo
-def encontrar_movimientos(estanque, grupo):
-    movimientos = []
-    posicion_vacia = estanque.index('_')  # Encuentra la posición del espacio vacío
-    
-    for i in range(len(estanque)):
-        if grupo == 'L' and estanque[i] == 'L':  # Rana 'L' solo se mueve a la derecha
-            if i + 1 < len(estanque) and estanque[i + 1] == '_':  # mover un espacio a la derecha
-                movimientos.append((i, i + 1))
-            elif i + 2 < len(estanque) and estanque[i + 2] == '_':  # saltar sobre una rana
-                movimientos.append((i, i + 2))
-        elif grupo == 'R' and estanque[i] == 'R':  # Rana 'R' solo se mueve a la izquierda
-            if i - 1 >= 0 and estanque[i - 1] == '_':  # mover un espacio a la izquierda
-                movimientos.append((i, i - 1))
-            elif i - 2 >= 0 and estanque[i - 2] == '_':  # saltar sobre una rana
-                movimientos.append((i, i - 2))
-    
-    # Ordenar los movimientos por distancia al espacio vacío
-    movimientos.sort(key=lambda mov: abs(mov[0] - posicion_vacia))
-    return movimientos
+        for saltos, grupo in secuencia_saltos:
+            if self.estanque.es_completado(self.n):
+                print(Fore.MAGENTA + "¡Felicidades! Has completado el juego." + Style.RESET_ALL)
+                return
 
-# Mueve la rana en el estanque
-def mover_rana(estanque, origen, destino):
-    estanque[origen], estanque[destino] = estanque[destino], estanque[origen]
-
-# Lógica de movimiento para cada grupo basado en la secuencia de saltos
-def movimiento_grupo(estanque, grupo, saltos):
-    for _ in range(saltos):
-        with lock:  # Bloqueo para evitar que ambos grupos se muevan a la vez
-            movimientos = encontrar_movimientos(estanque, grupo)
-            if movimientos:
-                origen, destino = movimientos.pop(0)  # Mover la rana más cercana al espacio vacío
-                mover_rana(estanque, origen, destino)
-                mostrar_estanque(estanque)
-                time.sleep(0.5)
+            hilo = RanaGrupo(self.estanque, grupo, saltos)
+            hilo.start()
+            hilo.join()
 
 
-# # Genera la secuencia de saltos según la lógica descrita
-# def generar_secuencia_saltos(n):
-#     secuencia = []
-#     # Secuencia de incremento
-#     for i in range(1, n + 1):
-#         secuencia.append((i, 'L' if i % 2 != 0 else 'R'))
-    
-#     # Secuencia de repetición con n saltos
-#     secuencia.extend([(n, 'L'), (n, 'R'), (n, 'L')])
-    
-#     # Secuencia de decremento
-#     for i in range(n - 1, 0, -1):
-#         secuencia.append((i, 'R' if i % 2 != 0 else 'L'))
-    
-#     return secuencia
-
-
-def generar_secuencia_saltos(n):
-    secuencia = []
-    # Secuencia de incremento
-    for i in range(1, n + 1):
-        secuencia.append((i, 'L' if i % 2 != 0 else 'R'))
-    
-    # Si n es impar, hacer un ajuste
-    if n % 2 != 0:
-        secuencia.append((n, 'L'))
-        secuencia.append((n, 'R'))
-    
-    # Secuencia de repetición con n saltos
-    secuencia.extend([(n, 'L'), (n, 'R'), (n, 'L')])
-    
-    # Secuencia de decremento
-    for i in range(n - 1, 0, -1):
-        secuencia.append((i, 'R' if i % 2 != 0 else 'L'))
-    
-    return secuencia
-
-
-
-    # Función para ejecutar el juego con hilos
-def ejecutar_juego_con_hilos():
-    # Pedir al usuario la cantidad de ranas por lado
-    n = int(input("Ingrese la cantidad de ranas por lado: "))
-    estanque = ['L'] * n + ['_'] + ['R'] * n
-    mostrar_estanque(estanque)
-    
-    # Generar la secuencia de saltos según el valor de n
-    secuencia_saltos = generar_secuencia_saltos(n)
-
-    # Crear hilos para cada secuencia de movimiento
-    for saltos, grupo in secuencia_saltos:
-        # Comprobar si se ha completado el juego
-        if estanque == ['R'] * n + ['_'] + ['L'] * n:
-            print(Fore.MAGENTA + "¡Felicidades! Has completado el juego." + Style.RESET_ALL)
-            return
-        
-        # Crear y ejecutar un hilo para el grupo de ranas correspondiente
-        hilo = threading.Thread(target=movimiento_grupo, args=(estanque, grupo, saltos))
-        hilo.start()
-        hilo.join()  # Esperar a que el hilo termine antes de continuar con el siguiente
-
-# Inicia el juego
 if __name__ == "__main__":
-    ejecutar_juego_con_hilos()
+    juego = JuegoRanas()
+    juego.ejecutar()
