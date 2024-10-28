@@ -8,34 +8,34 @@ init()
 class Estanque:
     def __init__(self, n):
         """Inicializa el estanque con n ranas en cada lado y un espacio vacío en el centro."""
-        self.estanque = ['L'] * n + ['_'] + ['R'] * n
+        self.estanque = ['🐟'] * n + ['_'] + ['🐸'] * n
         self.lock = threading.Lock()
 
     def mostrar(self):
-        """Muestra el estado actual del estanque."""
+        
         print(Style.RESET_ALL + "Ranas ->     ", end="  ")
         for posicion in self.estanque:
-            color = Fore.RED if posicion == 'L' else Fore.GREEN if posicion == 'R' else Fore.WHITE
+            color = Fore.RED if posicion == '🐟' else Fore.GREEN if posicion == '🐸' else Fore.WHITE
             print(color + posicion, end=" ")
         print(Style.RESET_ALL)
         print(Style.RESET_ALL + "Posiciones -> " + " ".join(map(str, range(len(self.estanque)))))
 
     def mover_rana(self, origen, destino):
-        """Intercambia la posición de una rana con el espacio vacío."""
+        
         self.estanque[origen], self.estanque[destino] = self.estanque[destino], self.estanque[origen]
 
     def encontrar_movimientos(self, grupo):
-        """Encuentra los movimientos válidos para el grupo 'L' o 'R'."""
+        
         movimientos = []
         posicion_vacia = self.estanque.index('_')
 
         for i in range(len(self.estanque)):
-            if grupo == 'L' and self.estanque[i] == 'L':
+            if grupo == '🐟' and self.estanque[i] == '🐟':
                 if i + 1 < len(self.estanque) and self.estanque[i + 1] == '_':
                     movimientos.append((i, i + 1))
                 elif i + 2 < len(self.estanque) and self.estanque[i + 2] == '_':
                     movimientos.append((i, i + 2))
-            elif grupo == 'R' and self.estanque[i] == 'R':
+            elif grupo == '🐸' and self.estanque[i] == '🐸':
                 if i - 1 >= 0 and self.estanque[i - 1] == '_':
                     movimientos.append((i, i - 1))
                 elif i - 2 >= 0 and self.estanque[i - 2] == '_':
@@ -46,7 +46,7 @@ class Estanque:
 
     def es_completado(self, n):
         """Verifica si el juego ha sido completado."""
-        return self.estanque == ['R'] * n + ['_'] + ['L'] * n
+        return self.estanque == ['🐸'] * n + ['_'] + ['🐟'] * n
 
 
 class RanaGrupo(threading.Thread):
@@ -59,7 +59,7 @@ class RanaGrupo(threading.Thread):
 
     def run(self):
         """Ejecuta los movimientos para el grupo de ranas."""
-        for _ in range(self.saltos):
+        for i in range(self.saltos):
             with self.estanque.lock:
                 movimientos = self.estanque.encontrar_movimientos(self.grupo)
                 if movimientos:
@@ -77,13 +77,13 @@ class JuegoRanas:
 
     def generar_secuencia_saltos(self):
        
-        secuencia = [(i, 'L' if i % 2 != 0 else 'R') for i in range(1, self.n + 1)]
+        secuencia = [(i, '🐟' if i % 2 != 0 else '🐸') for i in range(1, self.n + 1)]
 
         if self.n % 2 != 0:
-            secuencia += [(self.n, 'L'), (self.n, 'R')]
+            secuencia += [(self.n, '🐟'), (self.n, '🐸')]
 
-        secuencia += [(self.n, 'L'), (self.n, 'R'), (self.n, 'L')]
-        secuencia += [(i, 'R' if i % 2 != 0 else 'L') for i in range(self.n - 1, 0, -1)]
+        secuencia += [(self.n, '🐟'), (self.n, '🐸'), (self.n, '🐟')]
+        secuencia += [(i, '🐸' if i % 2 != 0 else '🐟') for i in range(self.n - 1, 0, -1)]
 
         return secuencia
 
