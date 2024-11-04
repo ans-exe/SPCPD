@@ -2,7 +2,9 @@ import threading
 import time
 
 # Estado inicial y posición objetivo del espacio vacío
-start = ["a", "b", "c", "_", "d", "f", "g"]
+n = int(input("Ingrese el número de ranas en cada lado: "))
+start = ['🐟'] * n + ['_'] + ['🐸'] * n
+contador=0
 target_empty_index = len(start) // 2  # Índice medio para el espacio vacío
 
 # Crear un bloqueo global
@@ -29,6 +31,7 @@ def is_goal(state):
 
 def rana_thread(rana, index):
     global current_state
+    global contador
     while not is_goal(current_state):
         with lock:
             empty_index = current_state.index("_")
@@ -37,18 +40,19 @@ def rana_thread(rana, index):
                 # Mover la rana al espacio vacío
                 current_state[empty_index], current_state[index] = current_state[index], current_state[empty_index]
 
-                # Imprimir el paso actual
+                
                 print(
                     f"Rana '{rana}' se movió de posición {index} a {empty_index}")
+                contador+=1
                 print("Estado actual:", current_state)
 
                 # Actualizar índice de la rana después del movimiento
                 index = empty_index
 
-        time.sleep(0.1)  # Pausa para evitar sobrecarga de CPU
+        time.sleep(1)  
 
 
-# Crear y lanzar un hilo para cada rana
+
 threads = []
 for i, rana in enumerate(start):
     if rana != "_":  # Ignoramos el espacio vacío
@@ -60,5 +64,6 @@ for i, rana in enumerate(start):
 for thread in threads:
     thread.join()
 
-# Imprimir el resultado final
+433
 print("¡Estado final alcanzado!", current_state)
+print("Número de movimientos:", contador)

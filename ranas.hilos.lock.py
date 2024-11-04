@@ -18,7 +18,7 @@ class Estanque:
             color = Fore.RED if posicion == '🐟' else Fore.GREEN if posicion == '🐸' else Fore.WHITE
             print(color + posicion, end=" ")
         print(Style.RESET_ALL)
-        print(Style.RESET_ALL + "Posiciones -> " + " ".join(map(str, range(len(self.estanque)))))
+      
 
     def mover_rana(self, origen, destino):
         
